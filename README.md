@@ -1,22 +1,23 @@
-This file contains instructions for obtaining, compiling, and using the microbial community design algorithm.  This algorithm takes in a set of species with associated metabolic reactions, a set of substrate metabolites, and a set of product metabolites.  The algorithm then finds a minimal community that has the metabolic capacity for converting the substrates into the products.
+This file contains instructions for obtaining, compiling, and using the microbial community design algorithm.  This algorithm takes in a set of species with associated metabolic reactions, a set of substrate metabolites, and a set of product metabolites.  The algorithm then finds a minimal community that has the metabolic capacity for converting the specified substrates into the desired products.
 
-# DOWNLOAD:
+## DOWNLOAD:
 
-Binaries for the community design algorithm, which formulates the specific instance as an ILP problem, are available for some platforms.  They can be downloaded at:
+The source code for the community design algorithm can be obtained by cloning the git repository:
 
-  Whatever the eventual github project binary directory location is
+`git clone git@github.com:engal/community_design.git`
 
-Pre-built binaries for Cbc, the ILP solver included with our source, can be downloaded from
+or downloading the compressed repository via the command line:
 
-  http://www.coin-or.org/download/binary/Cbc
+`wget https://github.com/engal/community_design/archive/master.tar.gz
+tar -zxf community_design-master.tar.gz`
 
-The source for the community design algorithm, along with the Cbc source, can be obtained by downloading the tarball at:
+or downloading the zip file directly from the webpage:
 
-  Eventual github project source tar directory
+https://github.com/engal/community_design
 
-The source can then be extracted by typing
+Pre-built binaries for Cbc, the ILP solver we recommend, can be downloaded from
 
-  tar zxf community_design.tar.gz 
+http://www.coin-or.org/download/binary/Cbc
 
 *******************************************************************
 COMPILATION:
