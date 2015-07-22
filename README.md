@@ -8,28 +8,34 @@ The source code for the community design algorithm can be obtained by cloning th
 
 or downloading the compressed repository via the command line:
 
-`wget https://github.com/engal/community_design/archive/master.tar.gz
-tar -zxf community_design-master.tar.gz`
+```wget https://github.com/engal/community_design/archive/master.tar.gz
+tar -zxf community_design-master.tar.gz```
 
 or downloading the zip file directly from the webpage:
 
 https://github.com/engal/community_design
 
-Pre-built binaries for Cbc, the ILP solver we recommend, can be downloaded from
+### Downloading the CBC ILP solver
 
-http://www.coin-or.org/download/binary/Cbc
+Pre-built binaries for CBC, the ILP solver we recommend, can be downloaded from [here](http://www.coin-or.org/download/binary/Cbc).
 
-*******************************************************************
-COMPILATION:
-*******************************************************************
+## COMPILATION:
 
-In the home directory of this project (where this README is located), compile the code by typing:
+In the home directory of this project (where this README.md is located), first perform the necessary setup by typing:
 
-  make
+`./setup`
 
-To test the code, you can type
+If you hav downloaded or compiled the CBC binary, then you can specify the binary's location during setup:
 
-  make test
+`./setup -c /path/to/CBC`
+
+Once you have finished the setup, you can compile by typing:
+
+`make`
+
+To test the code after compilation, you can then type
+
+`make test`
 
 *******************************************************************
 USE:
