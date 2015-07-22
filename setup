@@ -1,0 +1,20 @@
+#!/bin/bash
+# Sets up the bin directory and sets system-dependent variables in some scripts
+
+if [ ! -d bin ]; then
+    mkdir bin
+fi
+for file in $(ls src/ | grep -v cpp)
+do
+    sed "s@(BIN_DIR)@$(pwd)/bin@" src/$file | sed "s@(LIB_DIR)@$(pwd)/lib@" | sed "s@(TEST_DIR)@$(pwd)/test@" > bin/$file
+done
+chmod +x bin/*
+
+if [ ! -d test/bin ]; then
+    mkdir test/bin
+fi
+for file in $(ls test/src/)
+do
+    sed "s@(BIN_DIR)@$(pwd)/bin@" test/src/$file | sed "s@(TEST_DIR)@$(pwd)/test@" > test/bin/$file
+done
+chmod +x test/bin/*

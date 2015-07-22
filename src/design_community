@@ -1,0 +1,58 @@
+#!/bin/bash
+#
+# Wrapper script for running all pieces of the design algorithm.
+#
+# Usage: ./design_community.sh [-s] species_reactions_file substrates products
+BIN_DIR=(BIN_DIR)
+TMP_DIR=.
+SIMPLE=false
+FORCED=false
+forced_starts=""
+
+# Parsing arguments
+position_args=()
+while [[ $# > 0 ]]
+do
+    key="$1"
+    case $key in
+		-s)
+		SIMPLE=true
+		;;
+		-t)
+		TMP_DIR=$2
+		shift
+		;;
+		-f)
+		FORCED=true
+		forced_starts=$2
+		shift
+		;;	
+		*)
+		position_args+=($1)
+		;;
+    esac
+shift
+done
+
+species_file_location=${position_args[0]}
+start_metabolites=${position_args[1]}
+end_metabolites=${position_args[2]}
+species_file=$(basename $species_file_location)
+
+if [ $SIMPLE = true ]; then
+	if [ $FORCED = true ]; then
+		$BIN_DIR/write_design_problem.o -s $species_file_location -f $forced_starts $start_metabolites $end_metabolites > ${TMP_DIR}/${species_file}_${start_metabolites}_${end_metabolites}.prob
+	else
+		$BIN_DIR/write_design_problem.o -s $species_file_location $start_metabolites $end_metabolites > ${TMP_DIR}/${species_file}_${start_metabolites}_${end_metabolites}.prob
+	fi
+else
+	if [ $FORCED = true ]; then
+		$BIN_DIR/write_design_problem.o -f $forced_starts $species_file_location $start_metabolites $end_metabolites > ${TMP_DIR}/${species_file}_${start_metabolites}_${end_metabolites}.prob
+	else 
+		$BIN_DIR/write_design_problem.o $species_file_location $start_metabolites $end_metabolites > ${TMP_DIR}/${species_file}_${start_metabolites}_${end_metabolites}.prob
+	fi
+fi
+$BIN_DIR/cbc -import ${TMP_DIR}/${species_file}_${start_metabolites}_${end_metabolites}.prob -branchAnd -solution ${TMP_DIR}/${species_file}_${start_metabolites}_${end_metabolites}.sol >&2
+$BIN_DIR/get_solution_species.py ${TMP_DIR}/${species_file}_${start_metabolites}_${end_metabolites}.sol
+rm ${TMP_DIR}/${species_file}_${start_metabolites}_${end_metabolites}.prob
+rm ${TMP_DIR}/${species_file}_${start_metabolites}_${end_metabolites}.sol

@@ -1,0 +1,24 @@
+#!/bin/bash
+TEST_DIR=(TEST_DIR)
+
+NUM_TESTS=0
+NUM_PASSED=0
+NOT_PASSED=()
+for file in $(ls $TEST_DIR/bin)
+do
+    let NUM_TESTS=NUM_TESTS+1
+    
+    if [[ $($TEST_DIR/bin/$file) == "Test Passed!" ]]; then
+	echo "Test Passed!"
+	let NUM_PASSED=NUM_PASSED+1
+    else
+	echo "Test Failed"
+	NOT_PASSED=(${NOT_PASSED[@]} $file)
+    fi
+done
+echo "RESULTS: $NUM_PASSED out of $NUM_TESTS tests passed"
+echo "Failed tests:"
+for failure in ${NOT_PASSED[@]}
+do
+    echo $failure
+done
