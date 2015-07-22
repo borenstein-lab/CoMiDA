@@ -19,7 +19,7 @@ https://github.com/engal/community_design
 
 ##### Downloading the CBC ILP solver
 
-Pre-built binaries for CBC, the ILP solver we recommend, can be downloaded from [here](http://www.coin-or.org/download/binary/Cbc).
+Pre-built binaries for CBC, the ILP solver we recommend, can be downloaded from [here](http://ampl.com/products/solvers/open-source/#cbc).
 
 ### COMPILATION:
 
