@@ -4,6 +4,7 @@
 #
 # Usage: ./design_community.sh [-s] species_reactions_file substrates products
 BIN_DIR=(BIN_DIR)
+CBC_BIN=(CBC_BIN)
 TMP_DIR=.
 SIMPLE=false
 FORCED=false
@@ -52,7 +53,7 @@ else
 		$BIN_DIR/write_design_problem.o $species_file_location $start_metabolites $end_metabolites > ${TMP_DIR}/${species_file}_${start_metabolites}_${end_metabolites}.prob
 	fi
 fi
-$BIN_DIR/cbc -import ${TMP_DIR}/${species_file}_${start_metabolites}_${end_metabolites}.prob -branchAnd -solution ${TMP_DIR}/${species_file}_${start_metabolites}_${end_metabolites}.sol >&2
+$CBC_BIN -import ${TMP_DIR}/${species_file}_${start_metabolites}_${end_metabolites}.prob -branchAnd -solution ${TMP_DIR}/${species_file}_${start_metabolites}_${end_metabolites}.sol >&2
 $BIN_DIR/get_solution_species.py ${TMP_DIR}/${species_file}_${start_metabolites}_${end_metabolites}.sol
 rm ${TMP_DIR}/${species_file}_${start_metabolites}_${end_metabolites}.prob
 rm ${TMP_DIR}/${species_file}_${start_metabolites}_${end_metabolites}.sol

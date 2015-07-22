@@ -27,7 +27,7 @@ In the home directory of this project (where this README.md is located), first p
 
 If you hav downloaded or compiled the CBC binary, then you can specify the binary's location during setup:
 
-`./setup -c /path/to/CBC`
+`./setup -c /path/to/cbc`
 
 Once you have finished the setup, you can compile by typing:
 

@@ -1,18 +1,48 @@
 #!/bin/bash
+# Author: Alex Eng
+# Date: 7/22/2015
+#
 # Sets up the bin directory and sets system-dependent variables in some scripts
+# ./setup [-c cbc_location]
 
+# Default values
+CBC="bin/cbc"
+
+# Parsing command line arguments
+position_args=()
+while [[ $# > 0 ]]
+do
+    key="$1"
+    case $key in
+	-c)
+	CBC=$2
+	shift
+	;;
+	*)
+	position_args+=($1)
+	;;
+    esac
+shift
+done
+
+# Creating the bin directory
 if [ ! -d bin ]; then
     mkdir bin
 fi
+
+# Setting system-dependent variables
 for file in $(ls src/ | grep -v cpp)
 do
-    sed "s@(BIN_DIR)@$(pwd)/bin@" src/$file | sed "s@(LIB_DIR)@$(pwd)/lib@" | sed "s@(TEST_DIR)@$(pwd)/test@" > bin/$file
+    sed "s@(BIN_DIR)@$(pwd)/bin@" src/$file | sed "s@(LIB_DIR)@$(pwd)/lib@" | sed "s@(TEST_DIR)@$(pwd)/test@" | sed "s@(CBC_BIN)@${CBC}@" > bin/$file
 done
 chmod +x bin/*
 
+# Creating the test bin directory
 if [ ! -d test/bin ]; then
     mkdir test/bin
 fi
+
+# Setting system-dependent variables
 for file in $(ls test/src/)
 do
     sed "s@(BIN_DIR)@$(pwd)/bin@" test/src/$file | sed "s@(TEST_DIR)@$(pwd)/test@" > test/bin/$file
