@@ -59,10 +59,12 @@ Depending on the application, you may desire to use a less strict interpretation
 
 the new simple reactions would be
 
-`A -> C`
-`A -> D`
-`B -> C`
-`B -> D`
+```
+A -> C
+A -> D
+B -> C
+B -> D
+```
 
 and so calling `design_community` using this simple graph interpretation would look like this:
 
