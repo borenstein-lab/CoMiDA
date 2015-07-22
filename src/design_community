@@ -23,7 +23,7 @@ do
 		TMP_DIR=$2
 		shift
 		;;
-		-f)
+		-fs)
 		FORCED=true
 		forced_starts=$2
 		shift
@@ -42,15 +42,15 @@ species_file=$(basename $species_file_location)
 
 if [ $SIMPLE = true ]; then
 	if [ $FORCED = true ]; then
-		$BIN_DIR/write_design_problem.o -s $species_file_location -f $forced_starts $start_metabolites $end_metabolites > ${TMP_DIR}/${species_file}_${start_metabolites}_${end_metabolites}.prob
+		$BIN_DIR/write_design_problem -s $species_file_location -fs $forced_starts $start_metabolites $end_metabolites > ${TMP_DIR}/${species_file}_${start_metabolites}_${end_metabolites}.prob
 	else
-		$BIN_DIR/write_design_problem.o -s $species_file_location $start_metabolites $end_metabolites > ${TMP_DIR}/${species_file}_${start_metabolites}_${end_metabolites}.prob
+		$BIN_DIR/write_design_problem -s $species_file_location $start_metabolites $end_metabolites > ${TMP_DIR}/${species_file}_${start_metabolites}_${end_metabolites}.prob
 	fi
 else
 	if [ $FORCED = true ]; then
-		$BIN_DIR/write_design_problem.o -f $forced_starts $species_file_location $start_metabolites $end_metabolites > ${TMP_DIR}/${species_file}_${start_metabolites}_${end_metabolites}.prob
+		$BIN_DIR/write_design_problem -fs $forced_starts $species_file_location $start_metabolites $end_metabolites > ${TMP_DIR}/${species_file}_${start_metabolites}_${end_metabolites}.prob
 	else 
-		$BIN_DIR/write_design_problem.o $species_file_location $start_metabolites $end_metabolites > ${TMP_DIR}/${species_file}_${start_metabolites}_${end_metabolites}.prob
+		$BIN_DIR/write_design_problem $species_file_location $start_metabolites $end_metabolites > ${TMP_DIR}/${species_file}_${start_metabolites}_${end_metabolites}.prob
 	fi
 fi
 $CBC_BIN -import ${TMP_DIR}/${species_file}_${start_metabolites}_${end_metabolites}.prob -branchAnd -solution ${TMP_DIR}/${species_file}_${start_metabolites}_${end_metabolites}.sol >&2
