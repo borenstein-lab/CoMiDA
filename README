@@ -1,8 +1,6 @@
 This file contains instructions for obtaining, compiling, and using the microbial community design algorithm.  This algorithm takes in a set of species with associated metabolic reactions, a set of substrate metabolites, and a set of product metabolites.  The algorithm then finds a minimal community that has the metabolic capacity for converting the substrates into the products.
 
-*******************************************************************
-DOWNLOAD:
-*******************************************************************
+# DOWNLOAD:
 
 Binaries for the community design algorithm, which formulates the specific instance as an ILP problem, are available for some platforms.  They can be downloaded at:
 
