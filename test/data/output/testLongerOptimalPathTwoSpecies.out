@@ -1,2 +1,136 @@
-speciesD
-speciesE
+NAME          Community Design
+ROWS
+ N  COST
+ G ROW1
+ G ROW2
+ G ROW3
+ G ROW4
+ G ROW5
+ G ROW6
+ G ROW7
+ G ROW8
+ G ROW9
+ G ROW10
+ G ROW11
+ G ROW12
+ G ROW13
+ G ROW14
+ L ROW15
+ E ROW16
+ E ROW17
+ E ROW18
+ E ROW19
+ E ROW20
+ E ROW21
+COLUMNS
+ rxn0 COST 0
+ rxn0 ROW2 -1
+ rxn0 ROW15 -1
+ rxn0 ROW16 1
+ rxn0flag COST 0
+ rxn0flag ROW1 -1
+ rxn0flag ROW2 1
+ rxn1 COST 0
+ rxn1 ROW6 -1
+ rxn1 ROW16 -1
+ rxn1 ROW17 1
+ rxn1flag COST 0
+ rxn1flag ROW5 -1
+ rxn1flag ROW6 1
+ rxn2 COST 0
+ rxn2 ROW8 -1
+ rxn2 ROW17 -1
+ rxn2 ROW18 1
+ rxn2flag COST 0
+ rxn2flag ROW7 -1
+ rxn2flag ROW8 1
+ rxn3 COST 0
+ rxn3 ROW4 -1
+ rxn3 ROW15 -1
+ rxn3 ROW19 1
+ rxn3flag COST 0
+ rxn3flag ROW3 -1
+ rxn3flag ROW4 1
+ rxn4 COST 0
+ rxn4 ROW10 -1
+ rxn4 ROW19 -1
+ rxn4 ROW20 1
+ rxn4flag COST 0
+ rxn4flag ROW9 -1
+ rxn4flag ROW10 1
+ rxn5 COST 0
+ rxn5 ROW12 -1
+ rxn5 ROW20 -1
+ rxn5 ROW21 1
+ rxn5flag COST 0
+ rxn5flag ROW11 -1
+ rxn5flag ROW12 1
+ rxn6 COST 0
+ rxn6 ROW14 -1
+ rxn6 ROW18 1
+ rxn6 ROW21 -1
+ rxn6flag COST 0
+ rxn6flag ROW13 -1
+ rxn6flag ROW14 1
+ s/speciesA COST 1
+ s/speciesA ROW1 1
+ s/speciesB COST 1
+ s/speciesB ROW5 1
+ s/speciesC COST 1
+ s/speciesC ROW7 1
+ s/speciesD COST 1
+ s/speciesD ROW3 1
+ s/speciesD ROW9 1
+ s/speciesE COST 1
+ s/speciesE ROW11 1
+ s/speciesE ROW13 1
+RHS
+ RHS1 ROW1 0
+ RHS1 ROW2 0
+ RHS1 ROW3 0
+ RHS1 ROW4 0
+ RHS1 ROW5 0
+ RHS1 ROW6 0
+ RHS1 ROW7 0
+ RHS1 ROW8 0
+ RHS1 ROW9 0
+ RHS1 ROW10 0
+ RHS1 ROW11 0
+ RHS1 ROW12 0
+ RHS1 ROW13 0
+ RHS1 ROW14 0
+ RHS1 ROW15 0
+ RHS1 ROW16 0
+ RHS1 ROW17 0
+ RHS1 ROW18 1
+ RHS1 ROW19 0
+ RHS1 ROW20 0
+ RHS1 ROW21 0
+BOUNDS
+ LI BOUND rxn0 0
+ UI BOUND rxn0 1
+ BV BOUND rxn0flag 1
+ LI BOUND rxn1 0
+ UI BOUND rxn1 1
+ BV BOUND rxn1flag 1
+ LI BOUND rxn2 0
+ UI BOUND rxn2 1
+ BV BOUND rxn2flag 1
+ LI BOUND rxn3 0
+ UI BOUND rxn3 1
+ BV BOUND rxn3flag 1
+ LI BOUND rxn4 0
+ UI BOUND rxn4 1
+ BV BOUND rxn4flag 1
+ LI BOUND rxn5 0
+ UI BOUND rxn5 1
+ BV BOUND rxn5flag 1
+ LI BOUND rxn6 0
+ UI BOUND rxn6 1
+ BV BOUND rxn6flag 1
+ BV BOUND s/speciesA 1
+ BV BOUND s/speciesB 1
+ BV BOUND s/speciesC 1
+ BV BOUND s/speciesD 1
+ BV BOUND s/speciesE 1
+ENDATA

@@ -1,0 +1,13 @@
+NAME          Community Design
+ROWS
+ N  COST
+ L ROW1
+ G ROW2
+COLUMNS
+ s/speciesA COST 1
+RHS
+ RHS1 ROW1 0
+ RHS1 ROW2 1
+BOUNDS
+ BV BOUND s/speciesA 1
+ENDATA

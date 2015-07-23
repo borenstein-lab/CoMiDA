@@ -2,6 +2,4 @@
 BIN_DIR=(BIN_DIR)
 TEST_DIR=(TEST_DIR)
 
-$BIN_DIR/design_community $TEST_DIR/data/input/testTwoSourceTwoSinkSeparatePaths.edges 01,02 03,04  > testTwoSourceTwoSinkSeparatePaths.species
-$BIN_DIR/check_output $TEST_DIR/data/output/testTwoSourceTwoSinkSeparatePaths.out testTwoSourceTwoSinkSeparatePaths.species
-rm testTwoSourceTwoSinkSeparatePaths.species
+$BIN_DIR/write_design_problem $TEST_DIR/data/input/testTwoSourceTwoSinkSeparatePaths.edges 01 03 > testTwoSourceTwoSinkSeparatePaths.out

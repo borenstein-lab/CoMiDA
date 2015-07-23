@@ -2,6 +2,4 @@
 BIN_DIR=(BIN_DIR)
 TEST_DIR=(TEST_DIR)
 
-$BIN_DIR/design_community -s $TEST_DIR/data/input/testLongerOptimalPath.edges 01 03  > testLongerOptimalPath.species
-$BIN_DIR/check_output $TEST_DIR/data/output/testLongerOptimalPath.out testLongerOptimalPath.species
-rm testLongerOptimalPath.species
+$BIN_DIR/write_design_problem $TEST_DIR/data/input/testLongerOptimalPathSimple.edges 01 03 > testLongerOptimalPathSimple.out

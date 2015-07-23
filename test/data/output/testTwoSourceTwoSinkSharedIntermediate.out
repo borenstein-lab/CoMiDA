@@ -1,1 +1,79 @@
-speciesA
+NAME          Community Design
+ROWS
+ N  COST
+ G ROW1
+ G ROW2
+ G ROW3
+ G ROW4
+ G ROW5
+ G ROW6
+ G ROW7
+ G ROW8
+ L ROW9
+ L ROW10
+ E ROW11
+ E ROW12
+ E ROW13
+COLUMNS
+ rxn0 COST 0
+ rxn0 ROW2 -1
+ rxn0 ROW9 -1
+ rxn0 ROW11 1
+ rxn0flag COST 0
+ rxn0flag ROW1 -1
+ rxn0flag ROW2 2
+ rxn1 COST 0
+ rxn1 ROW4 -1
+ rxn1 ROW10 -1
+ rxn1 ROW11 1
+ rxn1flag COST 0
+ rxn1flag ROW3 -1
+ rxn1flag ROW4 2
+ rxn2 COST 0
+ rxn2 ROW6 -1
+ rxn2 ROW11 -1
+ rxn2 ROW12 1
+ rxn2flag COST 0
+ rxn2flag ROW5 -1
+ rxn2flag ROW6 2
+ rxn3 COST 0
+ rxn3 ROW8 -1
+ rxn3 ROW11 -1
+ rxn3 ROW13 1
+ rxn3flag COST 0
+ rxn3flag ROW7 -1
+ rxn3flag ROW8 2
+ s/speciesA COST 1
+ s/speciesA ROW1 1
+ s/speciesA ROW3 1
+ s/speciesA ROW5 1
+ s/speciesA ROW7 1
+RHS
+ RHS1 ROW1 0
+ RHS1 ROW2 0
+ RHS1 ROW3 0
+ RHS1 ROW4 0
+ RHS1 ROW5 0
+ RHS1 ROW6 0
+ RHS1 ROW7 0
+ RHS1 ROW8 0
+ RHS1 ROW9 0
+ RHS1 ROW10 0
+ RHS1 ROW11 0
+ RHS1 ROW12 1
+ RHS1 ROW13 1
+BOUNDS
+ LI BOUND rxn0 0
+ UI BOUND rxn0 2
+ BV BOUND rxn0flag 1
+ LI BOUND rxn1 0
+ UI BOUND rxn1 2
+ BV BOUND rxn1flag 1
+ LI BOUND rxn2 0
+ UI BOUND rxn2 2
+ BV BOUND rxn2flag 1
+ LI BOUND rxn3 0
+ UI BOUND rxn3 2
+ BV BOUND rxn3flag 1
+ BV BOUND s/speciesA 1
+ENDATA

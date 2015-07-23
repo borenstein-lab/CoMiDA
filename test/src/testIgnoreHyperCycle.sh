@@ -2,6 +2,4 @@
 BIN_DIR=(BIN_DIR)
 TEST_DIR=(TEST_DIR)
 
-$BIN_DIR/design_community $TEST_DIR/data/input/testIgnoreCycle.edges 01 02 > testIgnoreCycle.species
-$BIN_DIR/check_output $TEST_DIR/data/output/testIgnoreCycle.out testIgnoreCycle.species
-rm testIgnoreCycle.species
+$BIN_DIR/write_design_problem $TEST_DIR/data/input/testIgnoreHyperCycle.edges 01 03 > testIgnoreHyperCycle.out
