@@ -2,7 +2,7 @@ NAME          Community Design
 ROWS
  N  COST
  L ROW1
- E ROW2
+ G ROW2
 COLUMNS
  s/speciesA COST 1
 RHS
