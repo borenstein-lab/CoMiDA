@@ -4,8 +4,8 @@ TEST_DIR=(TEST_DIR)
 
 $BIN_DIR/write_design_problem $TEST_DIR/data/input/testHyperOutputEdge.edges 01 03 > testHyperOutputEdge.out
 if [ $(diff testHyperOutputEdge.out $TEST_DIR/data/output/testHyperOutputEdge.out | wc -l | awk '{print $1}') == 0 ]; then
-	echo "ERROR: Observed output does not match the expected output."
-else
 	echo "Test Passed!"
+else
+	echo "ERROR: Observed output does not match the expected output."
 fi
 rm testHyperOutputEdge.out
