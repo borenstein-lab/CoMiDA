@@ -54,6 +54,6 @@ else
 	fi
 fi
 $CBC_BIN -import ${TMP_DIR}/${species_file}_${start_metabolites}_${end_metabolites}.prob -branchAnd -solution ${TMP_DIR}/${species_file}_${start_metabolites}_${end_metabolites}.sol >&2
-$BIN_DIR/get_solution_species.py ${TMP_DIR}/${species_file}_${start_metabolites}_${end_metabolites}.sol
+$BIN_DIR/get_solution_species ${TMP_DIR}/${species_file}_${start_metabolites}_${end_metabolites}.sol
 rm ${TMP_DIR}/${species_file}_${start_metabolites}_${end_metabolites}.prob
 rm ${TMP_DIR}/${species_file}_${start_metabolites}_${end_metabolites}.sol
