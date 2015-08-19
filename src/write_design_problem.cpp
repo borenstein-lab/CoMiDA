@@ -27,6 +27,7 @@ using namespace std;
 const string FROM_TO = "TO";
 const string FLAG = "flag";
 const string REAC_PREFIX = "rxn";
+const string VERTEX_LABEL = "vtx";
 const string PROBLEM_NAME = "Community Design";
 const string SPECIES_TAG = "s/";
 const string SIMPLE_FLAG = "-s";
@@ -36,10 +37,10 @@ const char REAC_DELIM = '|';
 const char REAC_SIDE_DELIM = ':';
 const char METAB_DELIM = ',';
 enum custom_exception {FILE_EX, EMPTY_SPECIES_EX, EMPTY_REACTION_EX, EMPTY_METABOLITE_EX};
-enum vertexType {METABOLITE, ENZYME};
+enum vertexType {METABOLITE, REACTION};
 
-// The maximum coefficient value (set for what COIN-OR CBC can handle, depends on solver)
-const int MAX_COEFF = 10005;
+// A practical upper bound on the maximum flow along a single edge in the network, while theorectically the maximum flow needed could be higher for some networks, in most cases this upper bound will suffice and also avoid overflow issues in ILP solvers
+const size_t MAX_COEFF = 100;
 
 /* to_string(int)
  *
@@ -69,21 +70,21 @@ struct reaction{
     }
   }
 
-  /* string getEnzymeVarName()
+  /* string getREACTIONVarName()
    *
    * Returns the variable name that should be associated with the vertex correpsonding to this reaction
    */
-  string getEnzymeVarName() const {
+  string getREACTIONVarName() const {
     return REAC_PREFIX + to_string(reactionNumber);
   }
 
-  /* string getIncomingEdgeVarName(string)
+  /* string getIncomingEdgeVarName(string, string)
    *
-   * Returns the variable name that should be associated with the edge from the given substrate metabolite to this reaction
+   * Returns the variable name that should be associated with the edge from the given substrate metabolite to the given reaction product
    */
-  string getIncomingEdgeVarName(string substrate) const {
+  string getIncomingEdgeVarName(string substrate, string product) const {
     map<string, int>::const_iterator it = starts.find(substrate);
-    return to_string(it->second) + FROM_TO + getEnzymeVarName();
+    return to_string(it->second) + FROM_TO + getProductVertexVarName(product);
   }
 
   /* string getOutgoingEdgeVarName(string)
@@ -92,7 +93,16 @@ struct reaction{
    */
   string getOutgoingEdgeVarName(string product) const {
     map<string, int>::const_iterator it = ends.find(product);
-    return getEnzymeVarName() + FROM_TO + to_string(it->second);
+    return getREACTIONVarName() + FROM_TO + to_string(it->second);
+  }
+
+  /* string getProductVertexVarName(string)
+   *
+   * Returns the variable name that should be associated with the vertex linking this reaction's inputs to a specific product metabolite
+   */
+  string getProductVertexVarName(string product) const {
+    map<string, int>::const_iterator it = ends.find(product);
+    return getREACTIONVarName() + FROM_TO + to_string(it->second) + VERTEX_LABEL;
   }
 };
 
@@ -327,17 +337,19 @@ set<string>* readVertices(const char* verticesList){
  * A function to create an internal representation of a graph from the reactions associated with species and the metabolites of interest
  */
 graph* createGraph(map<reaction, set<string> >* reactionToSpecies, set<string>* starts, set<string>* ends, set<string>* forced, bool is_simple){
-  // Get all metabolite and reaction names since these will be the vertices.  At the same time, count the number of edges (from metabolite to reaction and reaction to metabolite)
+  // Get all metabolite names.  At the same time, count the number of edges and the number of reaction products.
   set<string> metabolites;
   size_t num_edges = 0;
+  size_t num_products = 0;
   for (map<reaction, set<string> >::iterator mapIt = reactionToSpecies->begin(); mapIt != reactionToSpecies->end(); ++mapIt){
     for (map<string, int>::const_iterator startIt = mapIt->first.starts.begin(); startIt != mapIt->first.starts.end(); ++startIt){
       metabolites.insert(startIt->first);
-      num_edges += 1;
+      num_edges += mapIt->first.ends.size();
     }
     for (map<string, int>::const_iterator endIt = mapIt->first.ends.begin(); endIt != mapIt->first.ends.end(); ++endIt){
       metabolites.insert(endIt->first);
       num_edges += 1;
+      num_products += 1;
     }
   }
   for (set<string>::iterator it = starts->begin(); it != starts->end(); ++it){
@@ -350,10 +362,10 @@ graph* createGraph(map<reaction, set<string> >* reactionToSpecies, set<string>* 
     metabolites.insert(*it);
   }
 
-  // Initialize the graph with a number of vertices equal to the number of metabolites and reactions if a hyper graph, otherwise just the number of metabolites, with the number of edges as the connections from metabolites to reactions and reactions to metabolites if a hyper graph, otherwise just the number of reactions
+  // Initialize the graph with a number of vertices equal to the number of metabolites and reaction products if a hyper graph, otherwise just the number of metabolites, with the number of edges as the connections from metabolites to reactions and reactions to metabolites if a hyper graph, otherwise just the number of reactions
   graph* output_graph = NULL;
   if (!is_simple){
-    output_graph = new graph(metabolites.size() + reactionToSpecies->size(), num_edges, is_simple);
+    output_graph = new graph(metabolites.size() + num_products, num_edges, is_simple);
   } else {
     output_graph = new graph(metabolites.size(), reactionToSpecies->size(), is_simple);
   }
@@ -367,12 +379,14 @@ graph* createGraph(map<reaction, set<string> >* reactionToSpecies, set<string>* 
     ++currVert;
   }
 
-  // If this is a hyper graph, then there are vertices for each reaction
+  // If this is a hyper graph, then there are vertices for each reaction product
   if (!is_simple){
-    for (map<reaction, set<string> >::const_iterator it = reactionToSpecies->begin(); it != reactionToSpecies->end(); ++it){
-      *currVert = vertex(it->first.getEnzymeVarName(), ENZYME);
-      labelToVertex[it->first.getEnzymeVarName()] = currVert;
-      ++currVert;
+    for (map<reaction, set<string> >::const_iterator mapIt = reactionToSpecies->begin(); mapIt != reactionToSpecies->end(); ++mapIt){
+      for (map<string, int>::const_iterator product_it = mapIt->first.ends.begin(); product_it != mapIt->first.ends.end(); ++product_it){
+        *currVert = vertex(mapIt->first.getProductVertexVarName(product_it->first), REACTION);
+        labelToVertex[mapIt->first.getProductVertexVarName(product_it->first)] = currVert;
+        ++currVert;
+      }
     }
   }
 
@@ -382,20 +396,22 @@ graph* createGraph(map<reaction, set<string> >* reactionToSpecies, set<string>* 
 
     // If this is a hyper graph, then there are edges between metabolites and reactions
     if (!is_simple){
-      // There's an edge from each metabolite to each reaction that has that metabolite in its start metabolites
+      // There's an edge from each metabolite to each reaction product that has that metabolite in its start metabolites
       for (map<string, int>::const_iterator startIt = mapIt->first.starts.begin(); startIt != mapIt->first.starts.end(); ++startIt){
-        *currEdge = edge(mapIt->first.getIncomingEdgeVarName(startIt->first));
-        currEdge->begin = labelToVertex[startIt->first];
-        currEdge->end = labelToVertex[mapIt->first.getEnzymeVarName()];
-        currEdge->begin->outgoingEdges.push_back(currEdge);
-        currEdge->end->incomingEdges.push_back(currEdge);
-        ++currEdge;
+        for (map<string, int>::const_iterator end_it = mapIt->first.ends.begin(); end_it != mapIt->first.ends.end(); ++end_it){
+          *currEdge = edge(mapIt->first.getIncomingEdgeVarName(startIt->first, end_it->first));
+          currEdge->begin = labelToVertex[startIt->first];
+          currEdge->end = labelToVertex[mapIt->first.getProductVertexVarName(end_it->first)];
+          currEdge->begin->outgoingEdges.push_back(currEdge);
+          currEdge->end->incomingEdges.push_back(currEdge);
+          ++currEdge;
+        }
       }
 
-      // There's also an edge from each reaction to each metabolite that is in the reaction's end metabolites
+      // There's also an edge from each reaction product vertex to the associated product metabolite
       for (map<string, int>::const_iterator endIt = mapIt->first.ends.begin(); endIt != mapIt->first.ends.end(); ++endIt){
         *currEdge = edge(mapIt->first.getOutgoingEdgeVarName(endIt->first));
-        currEdge->begin = labelToVertex[mapIt->first.getEnzymeVarName()];
+        currEdge->begin = labelToVertex[mapIt->first.getProductVertexVarName(endIt->first)];
         currEdge->end = labelToVertex[endIt->first];
         currEdge->begin->outgoingEdges.push_back(currEdge);
         currEdge->end->incomingEdges.push_back(currEdge);
@@ -403,7 +419,7 @@ graph* createGraph(map<reaction, set<string> >* reactionToSpecies, set<string>* 
       }
     } else {
       // Otherwise, there are edges between metabolites
-      *currEdge = edge(mapIt->first.getEnzymeVarName());
+      *currEdge = edge(mapIt->first.getREACTIONVarName());
       currEdge->begin = labelToVertex[mapIt->first.starts.begin()->first];
       currEdge->end = labelToVertex[mapIt->first.ends.begin()->first];
       currEdge->begin->outgoingEdges.push_back(currEdge);
@@ -442,13 +458,13 @@ void addFlowVars(map<string, var>* vars, graph* input_graph, int numSinks){
   for (int i = 0; i < input_graph->numEdges; ++i){
     
 
-    // Each flow variable is bounded to integer values 0 or greater with weight of 0 in the optimization function
+    // Each flow variable is an integer with values between 0 or the maximum coefficient set with weight of 0 in the optimization function
     var new_var = var();
     new_var.col = vars->size() + 1;
     new_var.name = input_graph->edges[i].label;
-    new_var.colBound = LOWER;
+    new_var.colBound = DOUBLE;
     new_var.lb = 0;
-    new_var.ub = 0;
+    new_var.ub = MAX_COEFF;
     new_var.coef = 0;
     new_var.vType = INTEGER;
     // The flow variables have an upper bound of the number of sinks in simple graphs
@@ -471,7 +487,7 @@ void addReactionVars(map<string, var>* vars, map<reaction, set<string> >* reacti
     // For each reaction, there is an associated binary value flag to indicate whether flow is non-zero through the reaction with a weight of 0 in the optimization function, 
     var new_var = var();
     new_var.col = vars->size() + 1;
-    new_var.name = it->first.getEnzymeVarName();
+    new_var.name = it->first.getREACTIONVarName();
     new_var.colBound = DOUBLE;
     new_var.lb = 0;
     new_var.ub = 1;
@@ -480,17 +496,17 @@ void addReactionVars(map<string, var>* vars, map<reaction, set<string> >* reacti
 
     // The name for the reaction variable needs to have an addition in the simple graph case, otherwise it's the same name as the flow variable
     if (is_simple){
-      new_var.name = it->first.getEnzymeVarName() + FLAG;
+      new_var.name = it->first.getREACTIONVarName() + FLAG;
     }
     vars->insert(pair<string, var>(new_var.name, new_var));
   }
 }
 
-/* void addCoverConstraints(list<constraint>*, map<reaction, list<string> >*, map<string, var>, set<string>*, bool)
+/* void addCoverConstraints(list<constraint>*, map<reaction, list<string> >*, map<string, var>, set<string>*, size_t, bool)
  *
  * A function that adds constraints defining that each reaction in the path between the substrates and products must be provided by at least one species
  */
-void addCoverConstraints(list<constraint>* constraints, map<reaction, set<string> >* reactionToSpecies, map<string, var>* vars, set<string>* ends, bool is_simple){
+void addCoverConstraints(list<constraint>* constraints, map<reaction, set<string> >* reactionToSpecies, map<string, var>* vars, set<string>* ends, size_t numEdges, bool is_simple){
   
   // If a reaction has flow across it, then it must be covered by at least one species
   for (map<reaction, set<string> >::const_iterator mapIt = reactionToSpecies->begin(); mapIt != reactionToSpecies->end(); ++mapIt){
@@ -516,9 +532,9 @@ void addCoverConstraints(list<constraint>* constraints, map<reaction, set<string
     
     // Subtract the variable for flow through the reaction, the name has an additional flag in a simple graph
     if (is_simple){
-      varInfo = &((*vars)[mapIt->first.getEnzymeVarName() + FLAG]);
+      varInfo = &((*vars)[mapIt->first.getREACTIONVarName() + FLAG]);
     } else {
-      varInfo = &((*vars)[mapIt->first.getEnzymeVarName()]);
+      varInfo = &((*vars)[mapIt->first.getREACTIONVarName()]);
     }
     varInfo->rows.push_back(constraints->back().row);
     varInfo->values.push_back(-1);
@@ -535,16 +551,16 @@ void addCoverConstraints(list<constraint>* constraints, map<reaction, set<string
       constraints->push_back(new_constraint);
 
       // Add the flag for flow times the number of sinks so the flow is at most the number of sinks
-      varInfo = &((*vars)[mapIt->first.getEnzymeVarName() + FLAG]);
+      varInfo = &((*vars)[mapIt->first.getREACTIONVarName() + FLAG]);
       varInfo->rows.push_back(constraints->back().row);
       varInfo->values.push_back(ends->size());
 
       // Subtract the flow through the reaction
-      varInfo = &((*vars)[mapIt->first.getEnzymeVarName()]);
+      varInfo = &((*vars)[mapIt->first.getREACTIONVarName()]);
       varInfo->rows.push_back(constraints->back().row);
       varInfo->values.push_back(-1);
     } else {
-      // Otherwise, we use the flow through each of the edges exiting the reaction vertex
+      // Otherwise, we use the flow through each of the reaction product edges associated with the reaction
       for (map<string, int>::const_iterator endIt = mapIt->first.ends.begin(); endIt != mapIt->first.ends.end(); ++endIt){
         constraint new_constraint = constraint();
         new_constraint.row = constraints->size() + 1;
@@ -554,10 +570,15 @@ void addCoverConstraints(list<constraint>* constraints, map<reaction, set<string
         constraints->push_back(new_constraint);
         string edgeName = mapIt->first.getOutgoingEdgeVarName(endIt->first);
 
-        // Add the enzyme times the largest possible value you can store in memory, since that is upper bound for the flow across a single edge
-        varInfo = &((*vars)[mapIt->first.getEnzymeVarName()]);
+        // Add the reaction times the maximum possible flow
+        varInfo = &((*vars)[mapIt->first.getREACTIONVarName()]);
         varInfo->rows.push_back(constraints->back().row);
+
+        // Practical upper bound
         varInfo->values.push_back(MAX_COEFF);
+
+        // Theoretical upper bound
+        //varInfo->values.push_back(numEdges);
 
         // Subtract the flow through the reaction
         varInfo = &((*vars)[edgeName]);
@@ -618,65 +639,65 @@ void addFlowConstraints(list<constraint>* constraints, map<string, var>* vars, s
         varInfo->values.push_back(-1);
       }
     } else {
-      // The flow into a metabolite or enzyme must be equal to the flow out of that metabolite or enzyme unless it's a start or end metabolite
-      constraint new_constraint = constraint();
-      new_constraint.row = constraints->size() + 1;
-      new_constraint.rowBound = FIXED;
-      new_constraint.lb = 0;
-      new_constraint.ub = 0;
-      
-      // The net flow out of a start vertex must be greater than or equal to 0
-      if (starts->find(currVertex->label) != starts->end()){
-        new_constraint.rowBound = UPPER;
+      // The flow into a metabolite must be equal to the flow out of that metabolite unless it's a start or end metabolite
+      if (currVertex->type == METABOLITE){
+        constraint new_constraint = constraint();
+        new_constraint.row = constraints->size() + 1;
+        new_constraint.rowBound = FIXED;
+        new_constraint.lb = 0;
+        new_constraint.ub = 0;
+        
+        // The net flow out of a start vertex must be greater than or equal to 0
+        if (starts->find(currVertex->label) != starts->end()){
+          new_constraint.rowBound = UPPER;
 
-        // If this is a forced start vertex, then the flow out of it needs to be greater than or equal to 1
-        if (forced->find(currVertex->label) != forced->end()){
-          new_constraint.ub = -1;
+          // If this is a forced start vertex, then the flow out of it needs to be greater than or equal to 1
+          if (forced->find(currVertex->label) != forced->end()){
+            new_constraint.ub = -1;
+          }
+        } else if (ends->find(currVertex->label) != ends->end()){
+          // The net flow into an end vertex must be greater than or equal to 1
+          new_constraint.rowBound = LOWER;
+          new_constraint.lb = 1;
         }
-      } else if (ends->find(currVertex->label) != ends->end()){
-        // The net flow into an end vertex must be greater than or equal to 1
-        new_constraint.rowBound = LOWER;
-        new_constraint.lb = 1;
-      }
-      constraints->push_back(new_constraint);
+        constraints->push_back(new_constraint);
 
-      // Sum the incoming edges
-      for (list<edge*>::iterator it = currVertex->incomingEdges.begin(); it != currVertex->incomingEdges.end(); ++it){
-        string edgeName = (*it)->label;
-        varInfo = &((*vars)[edgeName]);
-        varInfo->rows.push_back(constraints->back().row);
-        varInfo->values.push_back(1);
+        // Sum the incoming edges
+        for (list<edge*>::iterator it = currVertex->incomingEdges.begin(); it != currVertex->incomingEdges.end(); ++it){
+          string edgeName = (*it)->label;
+          varInfo = &((*vars)[edgeName]);
+          varInfo->rows.push_back(constraints->back().row);
+          varInfo->values.push_back(1);
+        }
+     
+        // Subtract the sum of the outgoing edges
+        for (list<edge*>::iterator it = currVertex->outgoingEdges.begin(); it != currVertex->outgoingEdges.end(); ++it){
+          string edgeName = (*it)->label;
+          varInfo = &((*vars)[edgeName]);
+          varInfo->rows.push_back(constraints->back().row);
+          varInfo->values.push_back(-1);
+        }
       }
-   
-      // Subtract the sum of the outgoing edges
-      for (list<edge*>::iterator it = currVertex->outgoingEdges.begin(); it != currVertex->outgoingEdges.end(); ++it){
-        string edgeName = (*it)->label;
-        varInfo = &((*vars)[edgeName]);
-        varInfo->rows.push_back(constraints->back().row);
-        varInfo->values.push_back(-1);
-      }
-
-      // Additionally, if this is an enzyme, we require that the flow across each edge incoming to the vertex must be greater than or equal to the flag indicating the enzyme is used
-      if (currVertex->type == ENZYME){
-
+      // If this is a reaction product vertex, we require that the flow across each edge incoming to the vertex must be equal to the flow exiting the reaction product vertex
+      else if (currVertex->type == REACTION){
         for (list<edge*>::iterator incomingIt = currVertex->incomingEdges.begin(); incomingIt != currVertex->incomingEdges.end(); ++incomingIt){
           
           constraint new_constraint = constraint();
           new_constraint.row = constraints->size() + 1;
-          new_constraint.rowBound = LOWER;
+          new_constraint.rowBound = FIXED;
           new_constraint.lb = 0;
           new_constraint.ub = 0;
           constraints->push_back(new_constraint);
 
           // Add the flow for this incoming edge
-          string edgeName = (*incomingIt)->label;
-          varInfo = &((*vars)[edgeName]);
+          string incomingEdgeName = (*incomingIt)->label;
+          varInfo = &((*vars)[incomingEdgeName]);
           varInfo->rows.push_back(constraints->back().row);
           varInfo->values.push_back(1);
 
-          // Subtract the flag for this enzyme
-          string enzymeName = currVertex->label;
-          varInfo = &((*vars)[enzymeName]);
+          // Subtract the flow for the outgoing edge
+          string outgoingEdgeName = currVertex->outgoingEdges.front()->label;
+          varInfo = &((*vars)[outgoingEdgeName]);
           varInfo->rows.push_back(constraints->back().row);
           varInfo->values.push_back(-1);
         }
@@ -781,7 +802,7 @@ int main(int argc, const char* argv[])
   addSpeciesVars(vars, speciesList);
   addFlowVars(vars, graph, ends->size());
   addReactionVars(vars, reactionToSpecies, is_simple);
-  addCoverConstraints(constraints, reactionToSpecies, vars, ends, is_simple);
+  addCoverConstraints(constraints, reactionToSpecies, vars, ends, graph->numEdges, is_simple);
   addFlowConstraints(constraints, vars, starts, ends, forced, graph);
 
   writeMPS(vars, constraints, PROBLEM_NAME);

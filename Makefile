@@ -16,5 +16,5 @@ test:
 
 clean:
 	rm -r bin
-	rm lib/*
+	rm lib/ilp_writing.o
 	rm -r test/bin
