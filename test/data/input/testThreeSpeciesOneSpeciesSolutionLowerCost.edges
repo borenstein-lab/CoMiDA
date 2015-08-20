@@ -1,0 +1,12 @@
+SUBSTRATES
+01
+PRODUCTS
+03
+SPECIES_COSTS
+speciesA 0.5
+speciesB 0.5
+speciesC 0.5
+SPECIES_NETWORKS
+speciesA)01:02|02:03|
+speciesB)01:02|
+speciesC)02:03|

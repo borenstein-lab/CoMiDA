@@ -2,7 +2,7 @@
 BIN_DIR=(BIN_DIR)
 TEST_DIR=(TEST_DIR)
 
-$BIN_DIR/write_design_problem -s $TEST_DIR/data/input/testTwoSourceTwoSinkSharedIntermediateSimple.edges 01,02 04,05 > testTwoSourceTwoSinkSharedIntermediateSimple.out
+$BIN_DIR/write_design_problem -s $TEST_DIR/data/input/testTwoSourceTwoSinkSharedIntermediateSimple.edges > testTwoSourceTwoSinkSharedIntermediateSimple.out
 if [ $(diff testTwoSourceTwoSinkSharedIntermediateSimple.out $TEST_DIR/data/output/testTwoSourceTwoSinkSharedIntermediateSimple.out | wc -l | awk '{print $1}') == 0 ]; then
 	echo "Test Passed!"
 else

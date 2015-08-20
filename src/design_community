@@ -7,8 +7,6 @@ BIN_DIR=(BIN_DIR)
 CBC_BIN=(CBC_BIN)
 TMP_DIR=.
 SIMPLE=false
-FORCED=false
-forced_starts=""
 
 # Parsing arguments
 position_args=()
@@ -23,11 +21,6 @@ do
 		TMP_DIR=$2
 		shift
 		;;
-		-fs)
-		FORCED=true
-		forced_starts=$2
-		shift
-		;;	
 		*)
 		position_args+=($1)
 		;;
@@ -36,24 +29,14 @@ shift
 done
 
 species_file_location=${position_args[0]}
-start_metabolites=${position_args[1]}
-end_metabolites=${position_args[2]}
 species_file=$(basename $species_file_location)
 
 if [ $SIMPLE = true ]; then
-	if [ $FORCED = true ]; then
-		$BIN_DIR/write_design_problem -s $species_file_location -fs $forced_starts $start_metabolites $end_metabolites > ${TMP_DIR}/${species_file}_${start_metabolites}_${end_metabolites}.prob
-	else
-		$BIN_DIR/write_design_problem -s $species_file_location $start_metabolites $end_metabolites > ${TMP_DIR}/${species_file}_${start_metabolites}_${end_metabolites}.prob
-	fi
+	$BIN_DIR/write_design_problem -s $species_file_location > ${TMP_DIR}/${species_file}.prob
 else
-	if [ $FORCED = true ]; then
-		$BIN_DIR/write_design_problem -fs $forced_starts $species_file_location $start_metabolites $end_metabolites > ${TMP_DIR}/${species_file}_${start_metabolites}_${end_metabolites}.prob
-	else 
-		$BIN_DIR/write_design_problem $species_file_location $start_metabolites $end_metabolites > ${TMP_DIR}/${species_file}_${start_metabolites}_${end_metabolites}.prob
-	fi
+	$BIN_DIR/write_design_problem $species_file_location > ${TMP_DIR}/${species_file}.prob
 fi
-$CBC_BIN -import ${TMP_DIR}/${species_file}_${start_metabolites}_${end_metabolites}.prob -branchAnd -solution ${TMP_DIR}/${species_file}_${start_metabolites}_${end_metabolites}.sol >&2
-$BIN_DIR/get_solution_species ${TMP_DIR}/${species_file}_${start_metabolites}_${end_metabolites}.sol
-rm ${TMP_DIR}/${species_file}_${start_metabolites}_${end_metabolites}.prob
-rm ${TMP_DIR}/${species_file}_${start_metabolites}_${end_metabolites}.sol
+$CBC_BIN -import ${TMP_DIR}/${species_file}.prob -branchAnd -solution ${TMP_DIR}/${species_file}.sol >&2
+$BIN_DIR/get_solution_species ${TMP_DIR}/${species_file}.sol
+rm ${TMP_DIR}/${species_file}.prob
+rm ${TMP_DIR}/${species_file}.sol

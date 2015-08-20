@@ -31,12 +31,18 @@ const string VERTEX_LABEL = "vtx";
 const string PROBLEM_NAME = "Community Design";
 const string SPECIES_TAG = "s/";
 const string SIMPLE_FLAG = "-s";
-const string FORCE_FLAG = "-fs";
 const char SPEC_REAC_DELIM = ')';
 const char REAC_DELIM = '|';
 const char REAC_SIDE_DELIM = ':';
 const char METAB_DELIM = ',';
-enum custom_exception {FILE_EX, EMPTY_SPECIES_EX, EMPTY_REACTION_EX, EMPTY_METABOLITE_EX};
+const string SUBSTRATE_HEADER = "SUBSTRATES";
+const string FORCED_HEADER = "FORCED_SUBSTRATES";
+const string PRODUCT_HEADER = "PRODUCTS";
+const string SPECIES_COST_HEADER = "SPECIES_COSTS";
+const string NETWORK_HEADER = "SPECIES_NETWORKS";
+string section_array[] = { SUBSTRATE_HEADER, FORCED_HEADER, PRODUCT_HEADER, SPECIES_COST_HEADER, NETWORK_HEADER};
+const set<string> sections(section_array, section_array + 5);
+enum custom_exception {FILE_EX, EMPTY_SPECIES_EX, EMPTY_REACTION_EX, EMPTY_SUBSTRATE_EX, EMPTY_FORCED_EX, EMPTY_PRODUCT_EX, UNKNOWN_SECTION_EX};
 enum vertexType {METABOLITE, REACTION};
 
 // A practical upper bound on the maximum flow along a single edge in the network, while theorectically the maximum flow needed could be higher for some networks, in most cases this upper bound will suffice and also avoid overflow issues in ILP solvers
@@ -143,167 +149,149 @@ struct graph{
   }
 };
 
-/* void readSpeciesReactionFile(list<species>*, map<reaction, set<string> >*, const char*, graphType, bool)
- *
- * A function that parses the information from a file of species and their associated reactions, adding that information to the list and map passed in
+/* void parseSpeciesNetwork(istringstream&, list<species>*, map<reaction, set<string> >*, bool, char, char, char, char, int&)
+ * 
+ * Parses a line representing a species' metabolic network and updates the appropriate data structures
  */
-void readSpeciesReactionFile(list<species>* speciesList, map<reaction, set<string> >* reactionToSpecies, const char* fileName, bool is_simple){
+void parseSpeciesNetwork(istringstream& lineISS, list<species>* species_list, map<reaction, set<string> >* reaction_to_species_map, bool is_simple, char species_reaction_delimiter, char reaction_delimiter, char substrate_product_delimiter, char metabolite_delimiter, int& reaction_count){
 
-  // Declaring variables for storing information as we parse the file
-  string line;
-  string speciesName;
-  string reactionString;
-  string starts;
-  string ends;
-  string start;
-  string end;
-  int reactionCount = 0;
+  // Declaring variables for storing the different parts of the line as we parse it
+  string species_name;
+  string reaction_string;
+  string substrates;
+  string products;
+  string substrate;
+  string product;
+  istringstream reactionISS;
+  istringstream metabolitesISS;
 
-  // Create the stream we will be reading the file from, and the string streams we will use to parse each line
-  ifstream file(fileName);
-
-  // Check for problems with the species/reaction file
-  if (!file.good()){
-    throw FILE_EX;
+  // The species name comes first and is separated from the associated reactions by the given delimiter
+  getline(lineISS, species_name, species_reaction_delimiter);
+  // Check if the species name is empty
+  if (species_name.empty()){
+    throw EMPTY_SPECIES_EX;
     return;
   }
 
-  istringstream lineISS;
-  istringstream reactionISS;
-  istringstream metabolitesISS;
-  
-  // Read until we get to the end of the file
-  while (getline(file, line)){
-    
-    // Clear the string stream for the previous line and then stream from the new line
-    lineISS.clear();
-    lineISS.str(line);
-    
-    // The speices name comes first, and is separated from the associated reactions by a ')'
-    getline(lineISS, speciesName, SPEC_REAC_DELIM);
-    
-    // Check if the species name is empty
-    if (speciesName.empty()){
-      throw EMPTY_SPECIES_EX;
-      return;
-    }
+  // Store the information about the species in a struct and add that to the list of species
+  species new_species;
+  new_species.name = SPECIES_TAG + species_name;
+  species_list->push_back(new_species);
 
-    // Store the information about the species in a struct and add that to the list of species
-    species newSpecies;
-    newSpecies.name = SPECIES_TAG + speciesName;
-    speciesList->push_back(newSpecies);
-    
-    // Next come the reactions, separated by '|'s
-    while (getline(lineISS, reactionString, REAC_DELIM)){
-      
-      // Skip over completely empty reactions
-      if (reactionString != ""){
-        // Reset the string stream for the next reaction
-        reactionISS.clear();
-        reactionISS.str(reactionString);
-        
-        // Each reaction has 2 parts, the start metabolites and the end metabolites
-        getline(reactionISS, starts, REAC_SIDE_DELIM);
-        getline(reactionISS, ends, REAC_DELIM);
- 
-        // Check for non-empty reaction components
-        if (starts.empty() || ends.empty()){
-          throw EMPTY_REACTION_EX;
-          return;
+  // Next are the reactions, separated by the given delimiter
+  while (getline(lineISS, reaction_string, reaction_delimiter)){
+
+    // Skip over completely empty reactions
+    if (reaction_string != ""){
+      // Reset the reaction string stream for the next reaction
+      reactionISS.clear();
+      reactionISS.str(reaction_string);
+
+      // Each reaction has two parts, the substrates and the products
+      getline(reactionISS, substrates, substrate_product_delimiter);
+      getline(reactionISS, products);
+
+      // Check for non-empty reaction components
+      if (substrates.empty() || products.empty()){
+        throw EMPTY_REACTION_EX;
+        return;
+      }
+
+      // Depending on the graph type, we change how we add reactions. If the graph type is hyper, then each reaction will be defined by multiple substrates and products. If the graph type is simple, then we need to split each reaction into separate reactions for each substrate and product metabolite pair.
+      if (!is_simple){
+        // Store the reaction information in a struct
+        reaction new_reaction;
+
+        // Clear the metabolite string stream for the set of substrate metabolites
+        metabolitesISS.clear();
+        metabolitesISS.str(substrates);
+
+        // Add the substrate metabolties
+        int substrate_metabolite_count = 0;
+        while (getline(metabolitesISS, substrate, metabolite_delimiter)){
+          new_reaction.starts[substrate] = substrate_metabolite_count++;
         }
 
-        // Depending on the graph type, we change how we add in reactions.  If the graph type is hyper, then each reaction will be defined by multiple starts and ends.  If the graph type is simple, then we need to split each reaction into separate reactions for each start and end metabolite pair.  
-        if (!is_simple){
-          // Store the reaction information in a struct
-          reaction newReaction;;
+        // Clear the metabolite string stream for the set of product metabolites
+        metabolitesISS.clear();
+        metabolitesISS.str(products);
 
-          // Clear the string stream for the set of start metabolites
-          metabolitesISS.clear();
-          metabolitesISS.str(starts);
+        // Add the product metabolites
+        int product_metabolite_count = 0;
+        while (getline(metabolitesISS, product, metabolite_delimiter)){
+          new_reaction.ends[product] = product_metabolite_count++;
+        }
 
-          // Add the start metabolites
-          int startsMetabolitesCount = 0;
-          while (getline(metabolitesISS, start, METAB_DELIM)){
-            newReaction.starts[start] = startsMetabolitesCount++;
+        // Check if the product metabolties of this reaction are a subset of the substrate metabolites, if so this reaction is a useless loop
+        bool is_cyclic = true;
+        for (map<string, int>::const_iterator product_it = new_reaction.ends.begin(); product_it != new_reaction.ends.end(); ++product_it){
+          if (new_reaction.starts.find(product_it->first) == new_reaction.starts.end()){
+            is_cyclic = false;
+            break;
           }
+        }
 
-          // Clear the string stream for the set of end metabolites
-          metabolitesISS.clear();
-          metabolitesISS.str(ends);
-
-          // Add the end metabolites
-          int endsMetabolitesCount = 0;
-          while (getline(metabolitesISS, end, METAB_DELIM)){
-            newReaction.ends[end] = endsMetabolitesCount++;
-          }
-
-          // Check if the end metabolites of this reaction are a subset of the start metabolites, if so this reaction is a useless loop
-          bool is_cyclic = true;
-          for (map<string, int>::const_iterator endIt = newReaction.ends.begin(); endIt != newReaction.ends.end(); ++endIt){
-            if (newReaction.starts.find(endIt->first) == newReaction.starts.end()){
-              is_cyclic = false;
-              break;
-            }
-          }
+        if (!is_cyclic){
 
           // Check if the reaction is already present in the map of reactions to species
-          if (!is_cyclic){
-            map<reaction, set<string> >::iterator it = reactionToSpecies->find(newReaction);
-            if (it == reactionToSpecies->end()){
-              // If the reaction was not already in the map, add the reaction to the map linked to a list of species that contain it
-              newReaction.reactionNumber = reactionCount++;
-              reactionToSpecies->insert(pair<reaction, set<string> >(newReaction, set<string>()));
-            } else {
-              newReaction.reactionNumber = it->first.reactionNumber;
-            }
-         
-            // Finally, add the species this reaction came from to the list of species providing this reaction
-            (*reactionToSpecies)[newReaction].insert(newSpecies.name);
-          }
-        } else {
-          // Grab the start and end metabolites first
-          list<string> start_metabolites;
-          list<string> end_metabolites;
-
-          // Clear the string stream for the set of start metabolites
-          metabolitesISS.clear();
-          metabolitesISS.str(starts);
-
-          // Add the start metabolites
-          while (getline(metabolitesISS, start, METAB_DELIM)){
-            start_metabolites.push_back(start);
-          }         
-
-          // Clear the string stream for the set of end metabolites
-          metabolitesISS.clear();
-          metabolitesISS.str(ends);
-
-          // Add the end metabolites
-          while (getline(metabolitesISS, end, METAB_DELIM)){
-            end_metabolites.push_back(end);
+          map<reaction, set<string> >::iterator it = reaction_to_species_map->find(new_reaction);
+          if (it == reaction_to_species_map->end()){
+            // If the reaction was not already in the map, add the reaction to the map linked to a set of the species that contain it
+            new_reaction.reactionNumber = reaction_count++;
+            (*reaction_to_species_map)[new_reaction] = set<string>();
+          } else {
+            // If the reaction is already in the map, then grab its reaction number
+            new_reaction.reactionNumber = it->first.reactionNumber;
           }
 
-          // Now create reactions for each pair of start and end metabolites
-          for (list<string>::const_iterator startIt = start_metabolites.begin(); startIt != start_metabolites.end(); ++startIt){
-            for (list<string>::const_iterator endIt = end_metabolites.begin(); endIt != end_metabolites.end(); ++endIt){
+          // Finally, add the species this reaction came from to the set of species that can catalyze this reaction
+          (*reaction_to_species_map)[new_reaction].insert(new_species.name);
+        }
+      } else {
+        // Otherwise we're using a simple representation of the metabolic network where there is a separate metabolic reaction for each substrate of an original reaction to each of that reaction's products
 
-              // Only create non-cyclic reactions
-              if (*startIt != *endIt){
-                reaction newReaction;
-                newReaction.starts[*startIt] = 0;
-                newReaction.ends[*endIt] = 0;
+        // Grab the substrate and product metabolites first
+        list<string> substrate_metabolites;
+        list<string> product_metabolites;
 
-                map<reaction, set<string> >::const_iterator rxnIt = reactionToSpecies->find(newReaction);
+        // Clear the metaboltie string stream for the set of substrate metabolites
+        metabolitesISS.clear();
+        metabolitesISS.str(substrates);
 
-                // Check if the reaction is already in the map of reactions to species and add a new entry if necessary
-                if (rxnIt == reactionToSpecies->end()){
-                  newReaction.reactionNumber = reactionCount++;
-                  reactionToSpecies->insert(pair<reaction, set<string> >(newReaction, set<string>()));
-                } else {
-                  newReaction.reactionNumber = rxnIt->first.reactionNumber;
-                }
-                (*reactionToSpecies)[newReaction].insert(newSpecies.name);
+        // Add the start metabolites
+        while (getline(metabolitesISS, substrate, metabolite_delimiter)){
+          substrate_metabolites.push_back(substrate);
+        }
+
+        // Clear the metabolite string stream for the set of product metabolites
+        metabolitesISS.clear();
+        metabolitesISS.str(products);
+
+        // Add the product metabolites
+        while (getline(metabolitesISS, product, metabolite_delimiter)){
+          product_metabolites.push_back(product);
+        }
+
+        // Now create the reactions for each pair of substrate and product metabolites
+        for (list<string>::const_iterator substrate_it = substrate_metabolites.begin(); substrate_it != substrate_metabolites.end(); ++substrate_it){
+          for (list<string>::const_iterator product_it = product_metabolites.begin(); product_it != product_metabolites.end(); ++product_it){
+
+            // Only create non-cyclic reactions
+            if (*substrate_it != *product_it){
+              reaction new_reaction;
+              new_reaction.starts[*substrate_it] = 0;
+              new_reaction.ends[*product_it] = 0;
+
+              // Check if the reaction is already in the map of reactions to species and add a new entry if necessary
+              map<reaction, set<string> >::const_iterator reaction_it = reaction_to_species_map->find(new_reaction);
+              if (reaction_it == reaction_to_species_map->end()){
+                new_reaction.reactionNumber = reaction_count++;
+                (*reaction_to_species_map)[new_reaction] = set<string>();
+              } else {
+                // if the reaction is already in the map, then grab the correct reaction number
+                new_reaction.reactionNumber = reaction_it->first.reactionNumber;
               }
+              (*reaction_to_species_map)[new_reaction].insert(new_species.name);
             }
           }
         }
@@ -312,24 +300,99 @@ void readSpeciesReactionFile(list<species>* speciesList, map<reaction, set<strin
   }
 }
 
-/* set<string>* readVertices(const char*)
+/* void readProblemDefinitionFile(set<string>*, set<string>*, set<string>*, map<string, double>*, list<species>*, map<reaction, set<string> >*, const char*, bool, char, char, char, char)
  *
- * A function to parse a comma-separated list of vertex names
+ * A function that parses the problem definition file containing the available substrates, forced substrates, target products, species costs, and species metabolic networks and updates the input data structures accordingly.
  */
-set<string>* readVertices(const char* verticesList){
-  set<string>* vertices = new set<string>;
-  stringstream s;
-  s << verticesList;
-  string v;
-  while (getline(s, v, ',')){
-    if (v.empty()){
-      throw EMPTY_METABOLITE_EX;
-      delete vertices;
-      return NULL;
-    }
-    vertices->insert(v);
+void readProblemDefinitionFile(set<string>* substrates, set<string>* forced_substrates, set<string>* products, map<string, double>* species_costs, list<species>* species_list, map<reaction, set<string> >* reaction_to_species_map, const char* fileName, bool is_simple, char species_reaction_delimiter, char reaction_delimiter, char substrate_product_delimiter, char metabolite_delimiter){
+
+  // Set up tracker for which section of the input file we're in
+  string section = "";
+
+  // Setting up the reaction counter so we can store unique reaction names
+  int reaction_count = 0;
+
+  // Declaring variables for storing intermediate iformation as we parse the file
+  string line;
+
+  // Create the stream we will be reading the file from
+  ifstream file(fileName);
+
+  // Check for problems with the input file
+  if (!file.good()){
+    throw FILE_EX;
+    return;
   }
-  return vertices;
+
+  // Create string streams used for parsing lines
+  istringstream lineISS;
+
+  // Read until we get to the end of the file
+  while (getline(file, line)){
+
+    // Check if the line matches a section header
+    set<string>::iterator find_header_it = sections.find(line);
+    if (find_header_it != sections.end()){
+      // If so, then we update the current section
+      section = line;
+    } else {
+      // Otherwise, start parsing based on whatever section we're in
+      if (section != SPECIES_COST_HEADER && section != NETWORK_HEADER){
+
+        // Check which metabolite set we should add this metaoblite to after checking if the metabolite is a non-empty string
+        if (section == SUBSTRATE_HEADER){
+          if (line.empty()){
+            throw EMPTY_SUBSTRATE_EX;
+            return;
+          }
+          substrates->insert(line);
+        } else if (section == FORCED_HEADER){
+          if (line.empty()){
+            throw EMPTY_FORCED_EX;
+            return;
+          }
+          forced_substrates->insert(line);
+        } else if (section == PRODUCT_HEADER){
+          if (line.empty()){
+            throw EMPTY_PRODUCT_EX;
+            return;
+          }
+          products->insert(line);
+        }
+      } else {
+        // Otherwise, we'll need to do some line parsing for the other sections
+        lineISS.clear();
+        lineISS.str(line);
+
+        if (section == SPECIES_COST_HEADER){
+          // Each line will have two parts, the species name and the cost
+          string species_name;
+          double cost = 1;
+          lineISS >> species_name;
+
+          // Check to see if we actually got a species name
+          if (species_name.empty()){
+            throw EMPTY_SPECIES_EX;
+            return;
+          }
+
+          lineISS >> cost;
+          (*species_costs)[SPECIES_TAG + species_name] = cost;
+        } else if (section == NETWORK_HEADER){
+          // We'll pass off the species network line parsing to a separate function
+          try{
+            parseSpeciesNetwork(lineISS, species_list, reaction_to_species_map, is_simple, species_reaction_delimiter, reaction_delimiter, substrate_product_delimiter, metabolite_delimiter, reaction_count);
+          } catch (custom_exception ex){
+            throw ex;
+            return;
+          }
+        } else {
+          // If we didn't find any of the expected sections, throw an error
+          throw UNKNOWN_SECTION_EX;
+        }
+      }
+    }
+  }
 }
 
 /* graph* createGraph(map<reaction, set<string> >*, set<string>*, set<string>*, set<string*>, bool)
@@ -430,11 +493,11 @@ graph* createGraph(map<reaction, set<string> >* reactionToSpecies, set<string>* 
   return output_graph;
 }
 
-/* void addSpeciesVars(map<string, var>*, list<species>*)
+/* void addSpeciesVars(map<string, var>*, list<species>*, map<string, double>*)
  *
  * A function that adds variables to the given map of names to variable info for each species
  */
-void addSpeciesVars(map<string, var>* vars, list<species>* speciesList){
+void addSpeciesVars(map<string, var>* vars, list<species>* speciesList, map<string, double>* species_costs){
   for (list<species>::iterator it = speciesList->begin(); it != speciesList->end(); ++it){
 
     // Each species variable has the same name as the species and is set as a binary variable with weight 1 in the optimization function
@@ -446,6 +509,13 @@ void addSpeciesVars(map<string, var>* vars, list<species>* speciesList){
     new_var.ub = 1;
     new_var.coef = 1;
     new_var.vType = BINARY;
+
+    // Check if the species has been assigned a cost in the objective function
+    map<string, double>::const_iterator cost_it = species_costs->find(it->name);
+    if (cost_it != species_costs->end()){
+      new_var.coef = (*species_costs)[it->name];
+    }
+
     vars->insert(pair<string, var>(it->name, new_var));
   }
 }
@@ -708,109 +778,79 @@ void addFlowConstraints(list<constraint>* constraints, map<string, var>* vars, s
 
 int main(int argc, const char* argv[])
 {
-  // Check for simple graph flag
+  // Check for flags
   bool is_simple = false;
-  const char* speciesFile = NULL;
-  const char* startsMetabolites = NULL;
-  const char* endsMetabolites = NULL;
-  const char* forcedStarts = NULL;
+  char species_reaction_delimiter = SPEC_REAC_DELIM;
+  char reaction_delimiter = REAC_DELIM;
+  char substrate_product_delimiter = REAC_SIDE_DELIM;
+  char metabolite_delimiter = METAB_DELIM;
+  const char* problem_definition_file = NULL;
   int positionArgumentCount = 0;
   for (int i = 1; i < argc; ++i){
     if (argv[i][0] == '-'){
       if (argv[i] == SIMPLE_FLAG){
         is_simple = true;
-      } else if (argv[i] == FORCE_FLAG){
-        forcedStarts = argv[i + 1];
-        ++i;
       }
     } else {
       switch (positionArgumentCount){
         case 0:
-          speciesFile = argv[i];
-          ++positionArgumentCount;
-          break;
-        case 1:
-          startsMetabolites = argv[i];
-          ++positionArgumentCount;
-          break;
-        case 2:
-          endsMetabolites = argv[i];
+          problem_definition_file = argv[i];
           ++positionArgumentCount;
           break;
       }
     }
   }
 
-  // Read in the species to reactions file
+  // Read the problem definition file
+  set<string>* substrates = new set<string>;
+  set<string>* forced_substrates = new set<string>;
+  set<string>* products = new set<string>;
+  map<string, double>* species_costs = new map<string, double>;
   list<species>* speciesList = new list<species>;
   map<reaction, set<string> >* reactionToSpecies = new map<reaction, set<string> >;
   try {
-    readSpeciesReactionFile(speciesList, reactionToSpecies, speciesFile, is_simple);
+    readProblemDefinitionFile(substrates, forced_substrates, products, species_costs, speciesList, reactionToSpecies, problem_definition_file, is_simple, species_reaction_delimiter, reaction_delimiter, substrate_product_delimiter, metabolite_delimiter);
   } catch (custom_exception ex){
     if (ex == FILE_EX){
       cerr<<"ERROR: There is a problem with the species/reaction file."<<endl;
+    } else if (ex == EMPTY_SUBSTRATE_EX){
+      cerr<<"ERROR: Substrate metabolites must be non-empty strings."<<endl;
+    } else if (ex == EMPTY_FORCED_EX){
+      cerr<<"ERROR: Forced substrate metabolites must be non-empty strings."<<endl;
+    } else if (ex == EMPTY_PRODUCT_EX){
+      cerr<<"ERROR: Product metabolites must be non-empty strings."<<endl;
     } else if (ex == EMPTY_SPECIES_EX){
       cerr<<"ERROR: Species names must be non-empty strings."<<endl;
     } else if (ex == EMPTY_REACTION_EX){
-      cerr<<"ERROR: Reactions must contain 3 space-delimited non-empty components, 1) substrate metabolite, 2) substrate/product separator, 3) product metabolite."<<endl;
+      cerr<<"ERROR: Reactions must contain 2 non-empty components, 1) substrate metabolites, 2) product metabolites."<<endl;
     }
-    delete speciesList;
-    delete reactionToSpecies;
-    return 1;
-  }
-
-  // Read in sets of starting and ending vertices
-  set<string>* starts;
-  set<string>* ends;
-  set<string>* forced;
-  try{
-    starts = readVertices(startsMetabolites);
-  } catch (custom_exception ex){
-    if (ex == EMPTY_METABOLITE_EX){
-      cerr<<"ERROR: Substrate metabolites must be non-empty strings."<<endl;
-    }
-    delete speciesList;
-    delete reactionToSpecies;
-    return 1;
-  }
-  try{
-    ends = readVertices(endsMetabolites);
-  } catch (custom_exception ex){
-    if (ex == EMPTY_METABOLITE_EX){
-      cerr<<"ERROR: Product metabolites must be non-empty strings."<<endl;
-    }
-    delete speciesList;
-    delete reactionToSpecies;
-    return 1;
-  }
-  try{
-    forced = readVertices(forcedStarts);
-  } catch (custom_exception ex){
-    if (ex == EMPTY_METABOLITE_EX){
-      cerr<<"ERROR: Forced start metabolites must be non-empty strings."<<endl;
-    }
+    delete substrates;
+    delete forced_substrates;
+    delete products;
+    delete species_costs;
     delete speciesList;
     delete reactionToSpecies;
     return 1;
   }
 
   // Create the graph representation of the metabolic network
-  graph* graph = createGraph(reactionToSpecies, starts, ends, forced, is_simple);
+  graph* graph = createGraph(reactionToSpecies, substrates, products, forced_substrates, is_simple);
 
   list<constraint>* constraints = new list<constraint>;
   map<string, var>* vars = new map<string, var>;
-  addSpeciesVars(vars, speciesList);
-  addFlowVars(vars, graph, ends->size());
+  addSpeciesVars(vars, speciesList, species_costs);
+  addFlowVars(vars, graph, products->size());
   addReactionVars(vars, reactionToSpecies, is_simple);
-  addCoverConstraints(constraints, reactionToSpecies, vars, ends, graph->numEdges, is_simple);
-  addFlowConstraints(constraints, vars, starts, ends, forced, graph);
+  addCoverConstraints(constraints, reactionToSpecies, vars, products, graph->numEdges, is_simple);
+  addFlowConstraints(constraints, vars, substrates, products, forced_substrates, graph);
 
   writeMPS(vars, constraints, PROBLEM_NAME);
   //writeCPLEX(vars, constraints, PROBLEM_NAME, MINIMIZE);
 
-  delete starts;
-  delete ends;
+  delete substrates;
+  delete products;
   delete graph;
+  delete species_costs;
   delete speciesList;
   delete reactionToSpecies;
   delete constraints;
