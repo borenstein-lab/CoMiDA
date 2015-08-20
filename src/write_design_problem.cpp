@@ -397,6 +397,14 @@ void readProblemDefinitionFile(set<string>* substrates, set<string>* forced_subs
       }
     }
   }
+
+  // Remove any metabolites from the available substrates set that are also in the target products set because those require conflicting constraints and we assume that desire to synthesize a product trumps that metabolite already being present in the environment
+  for (set<string>::const_iterator product_it = products->begin(); product_it != products->end(); ++product_it){
+    set<string>::iterator substrate_it = substrates->find(*product_it);
+    if (substrate_it != substrates->end()){
+      substrates->erase(substrate_it);
+    }
+  }
 }
 
 /* graph* createGraph(map<reaction, set<string> >*, set<string>*, set<string>*, set<string*>, bool)
