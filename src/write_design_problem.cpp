@@ -31,10 +31,14 @@ const string VERTEX_LABEL = "vtx";
 const string PROBLEM_NAME = "Community Design";
 const string SPECIES_TAG = "s/";
 const string SIMPLE_FLAG = "-s";
-const char SPEC_REAC_DELIM = ')';
-const char REAC_DELIM = '|';
-const char REAC_SIDE_DELIM = ':';
-const char METAB_DELIM = ',';
+const string SPECIES_REACTION_DELIMITER_FLAG = "-srd";
+const string REACTION_DELIMITER_FLAG = "-rd";
+const string SUBSTRATE_PRODUCT_DELIMITER_FLAG = "-spd";
+const string METABOLITE_DELIMITER_FLAG = "-md";
+const char DEFAULT_SPECIES_REACTION_DELIMITER = ')';
+const char DEFAULT_REACTION_DELIMITER = '|';
+const char DEFAULT_SUBSTRATE_PRODUCT_DELIMITER = ':';
+const char DEFAULT_METABOLITE_DELIMITER = ',';
 const string SUBSTRATE_HEADER = "SUBSTRATES";
 const string FORCED_HEADER = "FORCED_SUBSTRATES";
 const string PRODUCT_HEADER = "PRODUCTS";
@@ -780,18 +784,43 @@ int main(int argc, const char* argv[])
 {
   // Check for flags
   bool is_simple = false;
-  char species_reaction_delimiter = SPEC_REAC_DELIM;
-  char reaction_delimiter = REAC_DELIM;
-  char substrate_product_delimiter = REAC_SIDE_DELIM;
-  char metabolite_delimiter = METAB_DELIM;
+  char species_reaction_delimiter = DEFAULT_SPECIES_REACTION_DELIMITER;
+  char reaction_delimiter = DEFAULT_REACTION_DELIMITER;
+  char substrate_product_delimiter = DEFAULT_SUBSTRATE_PRODUCT_DELIMITER;
+  char metabolite_delimiter = DEFAULT_METABOLITE_DELIMITER;
   const char* problem_definition_file = NULL;
   int positionArgumentCount = 0;
+
+  // Parse the command line arguments
   for (int i = 1; i < argc; ++i){
     if (argv[i][0] == '-'){
+
+      // First check for flags with no arguments
       if (argv[i] == SIMPLE_FLAG){
         is_simple = true;
+
+      } else {
+        // Next check for flags with one argument
+        if (i + 1 >= argc){
+          cerr<<"Command line option "<<argv[i]<<" requires an argument."<<endl;
+          return 1;
+        } else if (argv[i] == SPECIES_REACTION_DELIMITER_FLAG){
+          species_reaction_delimiter = argv[i + 1][0];
+          ++i;
+        } else if (argv[i] == REACTION_DELIMITER_FLAG){
+          reaction_delimiter = argv[i + 1][0];
+          ++i;
+        } else if (argv[i] == SUBSTRATE_PRODUCT_DELIMITER_FLAG){
+          substrate_product_delimiter = argv[i + 1][0];
+          ++i;
+        } else if (argv[i] == METABOLITE_DELIMITER_FLAG){
+          metabolite_delimiter = argv[i + 1][0];
+          ++i;
+        }
       }
+
     } else {
+      // If not a flag, move on to positional required arguments
       switch (positionArgumentCount){
         case 0:
           problem_definition_file = argv[i];
@@ -799,6 +828,12 @@ int main(int argc, const char* argv[])
           break;
       }
     }
+  }
+
+  // Check for empty positional arguments
+  if (problem_definition_file == NULL){
+    cerr<<"No problem definition filename provided."<<endl;
+    return 1;
   }
 
   // Read the problem definition file
@@ -823,6 +858,8 @@ int main(int argc, const char* argv[])
       cerr<<"ERROR: Species names must be non-empty strings."<<endl;
     } else if (ex == EMPTY_REACTION_EX){
       cerr<<"ERROR: Reactions must contain 2 non-empty components, 1) substrate metabolites, 2) product metabolites."<<endl;
+    } else if (ex == UNKNOWN_SECTION_EX){
+      cerr<<"ERROR: Unknown section type in problem definition file."<<endl;
     }
     delete substrates;
     delete forced_substrates;

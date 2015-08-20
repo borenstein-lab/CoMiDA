@@ -6,16 +6,32 @@
 BIN_DIR=(BIN_DIR)
 CBC_BIN=(CBC_BIN)
 TMP_DIR=.
-SIMPLE=false
 
 # Parsing arguments
 position_args=()
+all_args=""
 while [[ $# > 0 ]]
 do
     key="$1"
     case $key in
 		-s)
-		SIMPLE=true
+		all_args="$all_args $1"
+		;;
+		-srd)
+		all_args="$all_args $1 $2"
+		shift
+		;;
+		-rd)
+		all_args="$all_args $1 $2"
+		shift
+		;;
+		-spd)
+		all_args="$all_args $1 $2"
+		shift
+		;;
+		-md)
+		all_args="$all_args $1 $2"
+		shift
 		;;
 		-t)
 		TMP_DIR=$2
@@ -23,20 +39,17 @@ do
 		;;
 		*)
 		position_args+=($1)
+		all_args="$all_args $1"
 		;;
     esac
 shift
 done
 
-species_file_location=${position_args[0]}
-species_file=$(basename $species_file_location)
+problem_definition_file_location=${position_args[0]}
+problem_definition_file=$(basename $problem_definition_file_location)
 
-if [ $SIMPLE = true ]; then
-	$BIN_DIR/write_design_problem -s $species_file_location > ${TMP_DIR}/${species_file}.prob
-else
-	$BIN_DIR/write_design_problem $species_file_location > ${TMP_DIR}/${species_file}.prob
-fi
-$CBC_BIN -import ${TMP_DIR}/${species_file}.prob -branchAnd -solution ${TMP_DIR}/${species_file}.sol >&2
-$BIN_DIR/get_solution_species ${TMP_DIR}/${species_file}.sol
-rm ${TMP_DIR}/${species_file}.prob
-rm ${TMP_DIR}/${species_file}.sol
+$BIN_DIR/write_design_problem $all_args > ${TMP_DIR}/${problem_definition_file}.prob
+$CBC_BIN -import ${TMP_DIR}/${problem_definition_file}.prob -branchAnd -solution ${TMP_DIR}/${problem_definition_file}.sol >&2
+$BIN_DIR/get_solution_species ${TMP_DIR}/${problem_definition_file}.sol
+rm ${TMP_DIR}/${problem_definition_file}.prob
+rm ${TMP_DIR}/${problem_definition_file}.sol
