@@ -2,7 +2,7 @@
 BIN_DIR=(BIN_DIR)
 TEST_DIR=(TEST_DIR)
 
-$BIN_DIR/write_design_problem $TEST_DIR/data/input/testHyperPartialCycle.edges 01 03 > testHyperPartialCycle.out
+$BIN_DIR/write_design_problem $TEST_DIR/data/input/testHyperPartialCycle.edges > testHyperPartialCycle.out
 if [ $(diff testHyperPartialCycle.out $TEST_DIR/data/output/testHyperPartialCycle.out | wc -l | awk '{print $1}') == 0 ]; then
 	echo "Test Passed!"
 else

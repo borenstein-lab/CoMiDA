@@ -9,50 +9,29 @@ ROWS
  G ROW6
  L ROW7
  E ROW8
- G ROW9
- E ROW10
- G ROW11
- E ROW12
- G ROW13
- E ROW14
- G ROW15
+ E ROW9
 COLUMNS
- 0TOrxn0 COST 0
- 0TOrxn0 ROW7 -1
- 0TOrxn0 ROW10 1
- 0TOrxn0 ROW11 1
- 0TOrxn1 COST 0
- 0TOrxn1 ROW7 -1
- 0TOrxn1 ROW12 1
- 0TOrxn1 ROW13 1
- 0TOrxn2 COST 0
- 0TOrxn2 ROW9 -1
- 0TOrxn2 ROW14 1
- 0TOrxn2 ROW15 1
  rxn0 COST 0
- rxn0 ROW1 -1
- rxn0 ROW2 10005
- rxn0 ROW11 -1
- rxn0TO0 COST 0
- rxn0TO0 ROW2 -1
- rxn0TO0 ROW8 1
- rxn0TO0 ROW10 -1
+ rxn0 ROW2 -1
+ rxn0 ROW7 -1
+ rxn0 ROW8 1
+ rxn0flag COST 0
+ rxn0flag ROW1 -1
+ rxn0flag ROW2 1
  rxn1 COST 0
- rxn1 ROW3 -1
- rxn1 ROW4 10005
- rxn1 ROW13 -1
- rxn1TO0 COST 0
- rxn1TO0 ROW4 -1
- rxn1TO0 ROW9 1
- rxn1TO0 ROW12 -1
+ rxn1 ROW4 -1
+ rxn1 ROW7 -1
+ rxn1 ROW9 1
+ rxn1flag COST 0
+ rxn1flag ROW3 -1
+ rxn1flag ROW4 1
  rxn2 COST 0
- rxn2 ROW5 -1
- rxn2 ROW6 10005
- rxn2 ROW15 -1
- rxn2TO0 COST 0
- rxn2TO0 ROW6 -1
- rxn2TO0 ROW8 1
- rxn2TO0 ROW14 -1
+ rxn2 ROW6 -1
+ rxn2 ROW8 1
+ rxn2 ROW9 -1
+ rxn2flag COST 0
+ rxn2flag ROW5 -1
+ rxn2flag ROW6 1
  s/speciesA COST 1
  s/speciesA ROW1 1
  s/speciesA ROW3 1
@@ -66,24 +45,18 @@ RHS
  RHS1 ROW5 0
  RHS1 ROW6 0
  RHS1 ROW7 0
- RHS1 ROW8 0
- RHS1 ROW9 1
- RHS1 ROW10 0
- RHS1 ROW11 0
- RHS1 ROW12 0
- RHS1 ROW13 0
- RHS1 ROW14 0
- RHS1 ROW15 0
+ RHS1 ROW8 1
+ RHS1 ROW9 0
 BOUNDS
- LI BOUND 0TOrxn0 0
- LI BOUND 0TOrxn1 0
- LI BOUND 0TOrxn2 0
- BV BOUND rxn0 1
- LI BOUND rxn0TO0 0
- BV BOUND rxn1 1
- LI BOUND rxn1TO0 0
- BV BOUND rxn2 1
- LI BOUND rxn2TO0 0
+ LI BOUND rxn0 0
+ UI BOUND rxn0 1
+ BV BOUND rxn0flag 1
+ LI BOUND rxn1 0
+ UI BOUND rxn1 1
+ BV BOUND rxn1flag 1
+ LI BOUND rxn2 0
+ UI BOUND rxn2 1
+ BV BOUND rxn2flag 1
  BV BOUND s/speciesA 1
  BV BOUND s/speciesB 1
 ENDATA

@@ -2,7 +2,7 @@
 BIN_DIR=(BIN_DIR)
 TEST_DIR=(TEST_DIR)
 
-$BIN_DIR/write_design_problem $TEST_DIR/data/input/testHyperOutputEdge.edges 01 03 > testHyperOutputEdge.out
+$BIN_DIR/write_design_problem $TEST_DIR/data/input/testHyperOutputEdge.edges > testHyperOutputEdge.out
 if [ $(diff testHyperOutputEdge.out $TEST_DIR/data/output/testHyperOutputEdge.out | wc -l | awk '{print $1}') == 0 ]; then
 	echo "Test Passed!"
 else

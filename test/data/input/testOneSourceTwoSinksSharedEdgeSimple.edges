@@ -1,3 +1,9 @@
+SUBSTRATES
+01
+PRODUCTS
+05
+06
+SPECIES_NETWORKS
 speciesA)01:02|
 speciesB)01:03|
 speciesC)01:04|04:06

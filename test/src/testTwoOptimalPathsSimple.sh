@@ -2,7 +2,7 @@
 BIN_DIR=(BIN_DIR)
 TEST_DIR=(TEST_DIR)
 
-$BIN_DIR/write_design_problem $TEST_DIR/data/input/testTwoOptimalPathsSimple.edges 01 03 > testTwoOptimalPathsSimple.out
+$BIN_DIR/write_design_problem -s $TEST_DIR/data/input/testTwoOptimalPathsSimple.edges > testTwoOptimalPathsSimple.out
 if [ $(diff testTwoOptimalPathsSimple.out $TEST_DIR/data/output/testTwoOptimalPathsSimple.out | wc -l | awk '{print $1}') == 0 ]; then
 	echo "Test Passed!"
 else

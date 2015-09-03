@@ -6,54 +6,50 @@
 BIN_DIR=(BIN_DIR)
 CBC_BIN=(CBC_BIN)
 TMP_DIR=.
-SIMPLE=false
-FORCED=false
-forced_starts=""
 
 # Parsing arguments
 position_args=()
+all_args=""
 while [[ $# > 0 ]]
 do
     key="$1"
     case $key in
 		-s)
-		SIMPLE=true
+		all_args="$all_args $1"
+		;;
+		-srd)
+		all_args="$all_args $1 $2"
+		shift
+		;;
+		-rd)
+		all_args="$all_args $1 $2"
+		shift
+		;;
+		-spd)
+		all_args="$all_args $1 $2"
+		shift
+		;;
+		-md)
+		all_args="$all_args $1 $2"
+		shift
 		;;
 		-t)
 		TMP_DIR=$2
 		shift
 		;;
-		-fs)
-		FORCED=true
-		forced_starts=$2
-		shift
-		;;	
 		*)
 		position_args+=($1)
+		all_args="$all_args $1"
 		;;
     esac
 shift
 done
 
-species_file_location=${position_args[0]}
-start_metabolites=${position_args[1]}
-end_metabolites=${position_args[2]}
-species_file=$(basename $species_file_location)
+problem_definition_file_location=${position_args[0]}
+problem_definition_file=$(basename $problem_definition_file_location)
 
-if [ $SIMPLE = true ]; then
-	if [ $FORCED = true ]; then
-		$BIN_DIR/write_design_problem -s $species_file_location -fs $forced_starts $start_metabolites $end_metabolites > ${TMP_DIR}/${species_file}_${start_metabolites}_${end_metabolites}.prob
-	else
-		$BIN_DIR/write_design_problem -s $species_file_location $start_metabolites $end_metabolites > ${TMP_DIR}/${species_file}_${start_metabolites}_${end_metabolites}.prob
-	fi
-else
-	if [ $FORCED = true ]; then
-		$BIN_DIR/write_design_problem -fs $forced_starts $species_file_location $start_metabolites $end_metabolites > ${TMP_DIR}/${species_file}_${start_metabolites}_${end_metabolites}.prob
-	else 
-		$BIN_DIR/write_design_problem $species_file_location $start_metabolites $end_metabolites > ${TMP_DIR}/${species_file}_${start_metabolites}_${end_metabolites}.prob
-	fi
-fi
-$CBC_BIN -import ${TMP_DIR}/${species_file}_${start_metabolites}_${end_metabolites}.prob -branchAnd -solution ${TMP_DIR}/${species_file}_${start_metabolites}_${end_metabolites}.sol >&2
-$BIN_DIR/get_solution_species ${TMP_DIR}/${species_file}_${start_metabolites}_${end_metabolites}.sol
-rm ${TMP_DIR}/${species_file}_${start_metabolites}_${end_metabolites}.prob
-rm ${TMP_DIR}/${species_file}_${start_metabolites}_${end_metabolites}.sol
+$BIN_DIR/write_design_problem $all_args > ${TMP_DIR}/${problem_definition_file}.prob
+$CBC_BIN -import ${TMP_DIR}/${problem_definition_file}.prob -branchAnd -solution ${TMP_DIR}/${problem_definition_file}.sol >&2
+$BIN_DIR/get_solution_species ${TMP_DIR}/${problem_definition_file}.sol
+rm ${TMP_DIR}/${problem_definition_file}.prob
+rm ${TMP_DIR}/${problem_definition_file}.sol
