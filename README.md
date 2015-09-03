@@ -41,9 +41,9 @@ To test the code after compilation, you can then type
 
 ### USE:
 
-After compilation, you will have an executable called `design_community` in the bin directory.  `design_community` functions as a wrapper for three other executables: `write_design_problem`, `cbc` (if you have downloaded it), and `get_solution_species`.  `design_community` takes three main arguments: a file representing the species to reaction mapping, a comma-delimited list of substrates, and a comma-delimited list of products, as shown below:
+After compilation, you will have an executable called `design_community` in the bin directory.  `design_community` functions as a wrapper for three other executables: `write_design_problem`, `cbc` (if you have downloaded it), and `get_solution_species`.  `design_community` takes one argument: a file representing the entire problem definition, including the list of available substrates, and substrates that the community must be able to convert to other metabolites, the desired products, and the mapping of which species can catalyze which reactions:
 
-`./design_community species->reactions substrates products`
+`./design_community problem_definition_file`
 
 The output is then a list of species in the minimal solution community found by the algorithm printed to stdout.
 
@@ -68,19 +68,17 @@ B -> D
 
 and so calling `design_community` using this simple graph interpretation would look like this:
 
-`./design_community -s species->reactions substrates products`
+`./design_community -s problem_definition_file`
 
 ###### Forced Substrate Usage
 
-Normally, the algorithm treats substrates as a pool of available resources, not caring about which particular available substrates are used to create the desired products.  However, there may be cases where you want to ensure that the designed community can make use of a specific substrate or set of substrates.  To achieve this, you can use the `-fs` flag, which is followed by a list of substrates you want to make sure the designed community can consume.  Forcing substrate usage in this way would look like this:
-
-`./design_community -fs forced_substrates species->reactions substrates products`
+Normally, the algorithm treats substrates as a pool of available resources, not caring about which particular available substrates are used to create the desired products.  However, there may be cases where you want to ensure that the designed community can make use of a specific substrate or set of substrates.  To achieve this, you can include a section the problem definition file with the section header "FORCED_SUBSTRATES" and a list of the associated substrates.
 
 ###### Manual Community Design Process
 
 The design process can also be performed step-by-step using the mentioned executables in case the user wants to examine intermediate files in the process.  You would start this step-by-step approach by running `write_design_problem`, which takes in the same arguments as `design_community` (including the additional arguments) and prints the associated problem in its ILP formulation:
 
-`./write_design_problem species->reactions substrates products > ilp_formulation.txt`
+`./write_design_problem problem_definition_file > ilp_formulation.txt`
 
 This output contains the definition of all variables and constraints in the ILP problem, which is then used as input for an ILP solver.  In our case, we used the CBC ILP solver, which uses a branch-and-cut search algorithm:
 
