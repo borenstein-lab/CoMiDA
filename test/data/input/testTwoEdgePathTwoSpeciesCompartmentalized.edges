@@ -1,0 +1,7 @@
+SUBSTRATES
+env_01
+PRODUCTS
+env_03
+SPECIES_NETWORKS
+speciesA)01_0:02_0|env_01:01_0|02_0:env_02
+speciesB)02_1:03_1|env_02:02_1|03_1:env_03

@@ -27,7 +27,7 @@ In the home directory of this project (where this README.md is located), first p
 
 `./setup`
 
-If you hav downloaded or compiled the CBC binary, then you can specify the binary's location during setup:
+If you have downloaded or compiled the CBC binary, then you can specify the binary's location during setup:
 
 `./setup -c /path/to/cbc`
 
@@ -57,7 +57,7 @@ There are a few advanced options available when using `design_community`.
 
 ###### Simple Graph Interpretation
 
-Depending on the application, you may desire to use a less strict interpretation of the metabolic network.  For instance, you may want to ensure a set of metabolic reactions can convert your available substrates to your desired products, but you don't care whether there may be cofactors or additional metabolites required to perform this conversion.  The `-s` flag causes the algorithm to treat the metabolic network of the provided species as a simple graph, where each multi-substrate->multi-product reaction from the original network is split into single-substrate->sigle-product reactions.  For example, if there was a reaction
+Depending on the application, you may desire a less strict interpretation of the metabolic network.  For instance, you may want to ensure a set of metabolic reactions can convert your available substrates to your desired products, but you don't care whether there may be cofactors or additional metabolites required to perform this conversion.  The `-s` flag causes the algorithm to treat the metabolic network of the provided species as a simple graph, where each multi-substrate->multi-product reaction from the original network is split into single-substrate->sigle-product reactions.  For example, if there was a reaction
 
 `A + B -> C + D`
 
@@ -73,6 +73,23 @@ B -> D
 and so calling `design_community` using this simple graph interpretation would look like this:
 
 `./design_community -s problem_definition_file`
+
+###### Compartmentalized Problem Definitions
+
+In contrast to simplifying the graph interpretation, it may someimes be necessary to deal with a compartmentalized model of species metabolism. In such a model, metabolites no longer flow freely between species but instead require appropriate uptake and secretion reactions to transfer metabolites. A compartmentalized problem can be defined by labeling metabolites as species-specific or environmental. Transport reactions are encoded as metabolic reactions that convert environmental metabolites to the corresponding species-specific metabolite or vice versa while other metabolic reactions within a species convert species-specific substrates to species-specific products. Defining such a compartmentalized problem can be done manually, but we have implemented a script, `compartmentalize_problem_definition`, to aid users in generationg compartmentalized problem definitions more easily. To use the script, first define an environmental metabolite label (by default, this label is the prefix `env`). Currently, we assume all available substrates and target products are environmental metabolites and the script adds the label as necessary. Using this label, add transport reactions to the species metabolic network definitions as reactions of the form `env_metabolite -> metabolite` or `metabolite -> env_metabolite` for uptake and secretion reactions respectively. Then run the script as follows:
+
+`./compartmentalize_problem_definition problem_definition_with_transport_reactiond_file > compartmentalized_problem_definition_file`
+
+The `compartmentalized_problem_definition_file` will now have species-associated labels assigned to all non-environmental metabolites in the species' metabolic networks such that all non-transport reactions in a species' metabolic network have substrates and products with the same species-specific label. By labeling metabolites in this manner, the algorithm can then only use paths that convert a metabolite in one species to a the same metabolite in another species via the appropriate intermediate transport reactions. Such a path transferrint metabolite `A` from species `1` to species `2` would look like this:
+
+```
+A_species1 -> env_A
+env_A -> A_species2
+```
+
+where both of these reactions are transport reactions. Additionally, a metabolic reaction within species `1` concerting metabolite `A` to metabolite `B` would look like:
+
+`A_species1 -> B_species1`
 
 ###### Forced Substrate Usage
 
