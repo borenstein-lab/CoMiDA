@@ -30,6 +30,11 @@ if [ ! -d bin ]; then
     mkdir bin
 fi
 
+# Creating the lib directory
+if [ ! -d lib ]; then
+    mkdir lib
+fi
+
 # Setting system-dependent variables
 for file in $(ls src/ | grep -v cpp)
 do
