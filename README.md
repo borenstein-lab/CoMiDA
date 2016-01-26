@@ -87,7 +87,7 @@ A_species1 -> env_A
 env_A -> A_species2
 ```
 
-where both of these reactions are transport reactions. Additionally, a metabolic reaction within species `1` concerting metabolite `A` to metabolite `B` would look like:
+where both of these reactions are transport reactions. Additionally, a metabolic reaction within species `1` converting metabolite `A` to metabolite `B` would look like:
 
 `A_species1 -> B_species1`
 
