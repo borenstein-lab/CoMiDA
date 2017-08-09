@@ -15,6 +15,6 @@ test:
 .PHONY: all test clean
 
 clean:
-	rm -r bin
+	rm bin/*
 	rm lib/ilp_writing.o
-	rm -r test/bin
+	rm test/bin/*
